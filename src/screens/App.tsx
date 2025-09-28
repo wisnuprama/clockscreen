@@ -1,15 +1,29 @@
 import { StatusBar } from "expo-status-bar";
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import React, { useEffect, useState } from "react";
-import { GlobalTimer } from "./GlobalTimer";
+import { GlobalTimer } from "../utils/GlobalTimer";
+import { Settings } from "./Settings";
 
 export default function App() {
+  const settingsRef = React.useRef<{ open: () => void; close: () => void }>(
+    null
+  );
+
+  return (
+    <Pressable
+      onLongPress={() => settingsRef.current?.open()}
+      style={styles.container}
+    >
+      <View>
+        <Clock />
+        <StatusBar style="auto" />
+        <Settings ref={settingsRef} />
+      </View>
+    </Pressable>
+  );
+}
+
+function Clock() {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -24,21 +38,18 @@ export default function App() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text
-        style={[
-          styles.clock,
-          {
-            fontSize: fontSize(48),
-          },
-        ]}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-      >
-        {formatTime(time)}
-      </Text>
-      <StatusBar style="auto" />
-    </View>
+    <Text
+      style={[
+        styles.clock,
+        {
+          fontSize: fontSize(48),
+        },
+      ]}
+      numberOfLines={1}
+      adjustsFontSizeToFit
+    >
+      {formatTime(time)}
+    </Text>
   );
 }
 
