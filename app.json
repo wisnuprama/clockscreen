@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "io.wisnu.clock-screen",
+      "bundleIdentifier": "io.wisnu.clockscreen",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -26,7 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "io.wisnu.clock-screen"
+      "package": "io.wisnu.clockscreen"
     },
     "web": {
       "favicon": "./assets/favicon.png"
