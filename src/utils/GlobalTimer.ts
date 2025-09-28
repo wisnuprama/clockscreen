@@ -8,18 +8,12 @@ type TimerCallback = (timestamp: number) => void;
  * every second with the current timestamp. When there are no subscribers,
  * the timer is stopped to conserve resources.
  */
-export class GlobalTimer {
-  private static instance: GlobalTimer;
+class GlobalTimer {
+  private intervalMs = 1000;
 
-  private constructor() {
+  constructor(intervalMs: number = 1000) {
+    this.intervalMs = intervalMs;
     this.setup();
-  }
-
-  public static getInstance(): GlobalTimer {
-    if (!GlobalTimer.instance) {
-      GlobalTimer.instance = new GlobalTimer();
-    }
-    return GlobalTimer.instance;
   }
 
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -43,11 +37,11 @@ export class GlobalTimer {
   }
 
   private resume() {
-    if(!this.callbacks.size) {
+    if (!this.callbacks.size) {
       return;
     }
 
-    if(!this.timer) {
+    if (!this.timer) {
       this.start();
     }
 
@@ -55,8 +49,8 @@ export class GlobalTimer {
   }
 
   private start() {
-    if(!this.timer) {
-      this.timer = setInterval(() => this.notifyCallbacks(), 1000);
+    if (!this.timer) {
+      this.timer = setInterval(() => this.notifyCallbacks(), this.intervalMs);
     }
   }
 
@@ -82,3 +76,5 @@ export class GlobalTimer {
     }
   }
 }
+
+export const GlobalSecondTimer = new GlobalTimer(1000);

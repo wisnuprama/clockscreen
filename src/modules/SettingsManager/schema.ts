@@ -1,7 +1,7 @@
 export const SettingsSchema = {
   showSeconds: {
     type: "boolean",
-    default: true,
+    default: false,
     label: "Show Seconds",
     description: "Display seconds on the clock",
     validate: (value: boolean) => {
@@ -24,7 +24,7 @@ export const SettingsSchema = {
   showTodayDate: {
     label: "Show Today's Date",
     type: "boolean",
-    default: false,
+    default: true,
     description: "Display today's date below the time",
     validate: (value: boolean) => {
       if (typeof value !== "boolean") {

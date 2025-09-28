@@ -17,10 +17,6 @@ interface SettingsHandlers {
   close: () => void;
 }
 
-const SettingKeys = Object.keys(SettingsManager) as Array<
-  keyof typeof SettingsManager
->;
-
 type SettingsProps = {};
 
 export const Settings = memo(

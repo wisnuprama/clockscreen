@@ -1,12 +1,40 @@
-import { Settings as RNSettings } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SettingsSchema } from "./schema";
 import type { SettingsManagerType } from "./types";
-import { useReducer } from "react";
+import { useEffect, useReducer } from "react";
+import { makeObservable, observable, runInAction } from "mobx";
+
+const StorageKey = "app_settings";
 
 class SettingsManagerImpl {
+  private cachedSettings: Map<string, any> = new Map();
+
+  public isLoading = true;
+
   constructor() {
+    makeObservable(this, {
+      isLoading: observable,
+    });
+    // Load settings from AsyncStorage
+    this.loadSettings();
+    // Initialize dynamic getters and setters
     this.init();
   }
+
+  private loadSettings = async () => {
+    try {
+      const jsonString = await AsyncStorage.getItem(StorageKey);
+      if (jsonString) {
+        this.cachedSettings = new Map(Object.entries(JSON.parse(jsonString)));
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  };
 
   private init() {
     const self = this;
@@ -39,17 +67,54 @@ class SettingsManagerImpl {
   }
 
   private getItem(key: string): unknown {
-    return RNSettings.get(key);
+    return this.cachedSettings.get(key);
   }
 
+  private idleCallbackHandle: number | null = null;
   private setItem(key: string, value: string | number | boolean): void {
-    return RNSettings.set({
-      [key]: value,
+    this.cachedSettings.set(key, value);
+
+    // Notify watchers
+    if (this.watchers.has(key)) {
+      for (const callback of this.watchers.get(key)!) {
+        try {
+          callback();
+        } catch (error) {
+          console.error("Error in settings watcher callback:", error);
+        }
+      }
+    }
+
+    if (this.idleCallbackHandle !== null) {
+      cancelIdleCallback(this.idleCallbackHandle);
+    }
+    // Persist to AsyncStorage
+    this.idleCallbackHandle = requestIdleCallback(() => {
+      AsyncStorage.setItem(
+        StorageKey,
+        JSON.stringify(Object.fromEntries(this.cachedSettings))
+      ).catch((error) => {
+        console.error("Failed to save settings:", error);
+      });
     });
   }
 
   public keys() {
     return Object.keys(SettingsSchema) as Array<keyof SettingsManagerType>;
+  }
+
+  private watchers = new Map<string, Set<() => void>>();
+
+  public watch(key: keyof SettingsManagerType, callback: () => void) {
+    if (!this.watchers.has(key)) {
+      this.watchers.set(key, new Set());
+    }
+    this.watchers.get(key)!.add(callback);
+
+    // Return an unsubscribe function to remove the watcher
+    return () => {
+      this.watchers.get(key)!.delete(callback);
+    };
   }
 }
 
@@ -82,8 +147,6 @@ export function withSettingsManager(Components: {
       }
     };
 
-    console.log("Rendering setting for key:", props.settingKey, SettingsSchema);
-
     const fieldSchema = SettingsSchema[props.settingKey];
 
     const label = fieldSchema.label || props.settingKey;
@@ -100,4 +163,21 @@ export function withSettingsManager(Components: {
       />
     );
   };
+}
+
+export function useSettings(key: keyof SettingsManagerType) {
+  const [, forceRender] = useReducer((x) => x + 1, 0);
+
+  // Subscribe to changes in the specific setting key
+  useEffect(() => {
+    const unsubscribe = SettingsManager.watch(key, () => {
+      forceRender();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [key]);
+
+  return SettingsManager[key];
 }

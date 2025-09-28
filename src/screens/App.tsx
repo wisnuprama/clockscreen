@@ -1,55 +1,135 @@
 import { StatusBar } from "expo-status-bar";
-import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Platform } from "react-native";
 import React, { useEffect, useState } from "react";
-import { GlobalTimer } from "../utils/GlobalTimer";
+import { GlobalSecondTimer } from "../utils/GlobalTimer";
 import { Settings } from "./Settings";
+import { SettingsManager, useSettings } from "../modules/SettingsManager";
+import { formatTime } from "../utils/formatTime";
+import { observer } from "mobx-react-lite";
+import { getMaxClockString } from "../utils/getMaxClockString";
+import { fontSize } from "../utils/fontSize";
 
-export default function App() {
+export default observer(function App() {
   const settingsRef = React.useRef<{ open: () => void; close: () => void }>(
     null
   );
 
-  return (
-    <Pressable
-      onLongPress={() => settingsRef.current?.open()}
-      style={styles.container}
-    >
-      <View>
-        <Clock />
-        <StatusBar style="auto" />
-        <Settings ref={settingsRef} />
+  if (SettingsManager.isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: "#fff" }}>Setting up...</Text>
       </View>
-    </Pressable>
+    );
+  }
+
+  return (
+    <>
+      <Pressable
+        onLongPress={() => settingsRef.current?.open()}
+        style={styles.container}
+      >
+        <View>
+          <Clock />
+        </View>
+        <DateDisplay />
+      </Pressable>
+      <StatusBar style="auto" />
+      <Settings ref={settingsRef} />
+    </>
   );
-}
+});
 
 function Clock() {
   const [time, setTime] = useState(new Date());
+
+  const showSeconds = useSettings("showSeconds");
+  const is24Hour = useSettings("is24Hour");
 
   useEffect(() => {
     const callback = (timestamp: number) => {
       setTime(new Date(timestamp));
     };
 
-    GlobalTimer.getInstance().subscribe(callback);
+    GlobalSecondTimer.subscribe(callback);
     return () => {
-      GlobalTimer.getInstance().unsubscribe(callback);
+      GlobalSecondTimer.unsubscribe(callback);
     };
   }, []);
 
+  // Calculate max width for clock text (e.g., "23:59:59")
+  const maxClockString = getMaxClockString({ showSeconds, is24Hour });
+  // Use a monospaced font and fixed width
   return (
-    <Text
-      style={[
-        styles.clock,
-        {
-          fontSize: fontSize(48),
-        },
-      ]}
-      numberOfLines={1}
-      adjustsFontSizeToFit
+    <View
+      style={{
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
-      {formatTime(time)}
-    </Text>
+      <Text
+        style={[
+          styles.clock,
+          {
+            fontSize: fontSize((1 / maxClockString.length) * 500), // Adjust multiplier as needed
+          },
+        ]}
+        numberOfLines={1}
+      >
+        {formatTime(time, { showSeconds, is24Hour })}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * TODO: support dynamic locale based on device settings
+ */
+function DateDisplay() {
+  const [date, setDate] = useState(new Date());
+
+  const showTodayDate = useSettings("showTodayDate");
+
+  useEffect(() => {
+    if (!showTodayDate) {
+      return;
+    }
+
+    const callback = (timestamp: number) => {
+      setDate(new Date(timestamp));
+    };
+
+    GlobalSecondTimer.subscribe(callback);
+    return () => {
+      GlobalSecondTimer.unsubscribe(callback);
+    };
+  }, []);
+
+  if (!showTodayDate) {
+    return null;
+  }
+
+  return (
+    <View
+      style={{
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 8,
+      }}
+    >
+      <Text
+        style={[
+          styles.clock,
+          {
+            fontSize: fontSize(24),
+          },
+        ]}
+        numberOfLines={1}
+      >
+        {Intl.DateTimeFormat("en-sg", { dateStyle: "medium" }).format(date)}
+      </Text>
+    </View>
   );
 }
 
@@ -61,23 +141,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   clock: {
-    fontSize: 48,
-    fontWeight: "bold",
     letterSpacing: 2,
     color: "#fff",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    // fontFamily is set dynamically in Clock for platform compatibility
   },
 });
-
-const formatTime = (date: Date) => {
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${hours}:${minutes}:${seconds}`;
-};
-
-const fontSize = (size: number) => {
-  const { width } = Dimensions.get("window");
-  const guidelineBaseWidth = 375; // Example base width for scaling
-
-  return (width / guidelineBaseWidth) * size;
-};
