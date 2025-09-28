@@ -1,10 +1,26 @@
-import React, { memo, useImperativeHandle, useState, forwardRef } from "react";
-import { Modal, StyleSheet, Text, View, ScrollView } from "react-native";
+import React, {
+  memo,
+  useImperativeHandle,
+  useState,
+  forwardRef,
+  useEffect,
+  useLayoutEffect,
+} from "react";
+import {
+  Modal,
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 
 import packageJson from "../../../package.json";
 import { SettingToggleItem } from "./components/SettingToggleItem";
 import {
   SettingsManager,
+  useSettings,
   withSettingsManager,
 } from "../../modules/SettingsManager";
 
@@ -22,6 +38,18 @@ type SettingsProps = {};
 export const Settings = memo(
   forwardRef<SettingsHandlers, SettingsProps>((_, ref) => {
     const [modalVisible, setModalVisible] = useState(false);
+
+    const showIntroduction = useSettings("showIntroduction");
+
+    useLayoutEffect(() => {
+      if (showIntroduction) {
+        Alert.alert(
+          "Welcome to Clock Screen App",
+          "You can open settings by long pressing the clock.",
+          [{ text: "Got it", onPress: () => {} }]
+        );
+      }
+    }, [showIntroduction]);
 
     useImperativeHandle(ref, () => ({
       open: () => setModalVisible(true),
@@ -48,6 +76,26 @@ export const Settings = memo(
           })}
           <Footer />
         </ScrollView>
+        <TouchableOpacity
+          onPress={() => setModalVisible(false)}
+          style={{
+            width: "50%",
+            padding: 16,
+            backgroundColor: "#eee",
+            borderRadius: 25,
+            alignSelf: "center",
+            marginVertical: 16,
+          }}
+        >
+          <Text
+            style={{
+              textAlign: "center",
+              fontWeight: "bold",
+            }}
+          >
+            Close
+          </Text>
+        </TouchableOpacity>
       </Modal>
     );
   })
@@ -73,11 +121,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 42,
   },
 
-  headerContainer: { backgroundColor: "#fff", paddingTop: 42 },
+  headerContainer: {
+    backgroundColor: "#fff",
+    paddingTop: 42,
+    marginBottom: 16,
+  },
   headerText: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
   },
 
   heading1: {

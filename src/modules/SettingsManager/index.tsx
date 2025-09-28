@@ -100,7 +100,9 @@ class SettingsManagerImpl {
   }
 
   public keys() {
-    return Object.keys(SettingsSchema) as Array<keyof SettingsManagerType>;
+    return (
+      Object.keys(SettingsSchema) as Array<keyof SettingsManagerType>
+    ).filter((key) => !SettingsSchema[key].hidden);
   }
 
   private watchers = new Map<string, Set<() => void>>();
