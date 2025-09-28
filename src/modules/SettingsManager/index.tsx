@@ -54,7 +54,8 @@ class SettingsManagerImpl {
 }
 
 const SettingsManager =
-  new SettingsManagerImpl() as unknown as SettingsManagerType;
+  new SettingsManagerImpl() as unknown as SettingsManagerImpl &
+    SettingsManagerType;
 
 export { SettingsManager };
 

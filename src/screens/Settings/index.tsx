@@ -47,7 +47,7 @@ export const Settings = memo(
           <View style={styles.headerContainer}>
             <Text style={styles.heading1}>Settings</Text>
           </View>
-          {SettingKeys.map((key) => {
+          {SettingsManager.keys().map((key) => {
             return <Toggle key={key} settingKey={key} />;
           })}
           <Footer />
