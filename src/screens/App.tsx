@@ -1,5 +1,12 @@
 import { StatusBar } from "expo-status-bar";
-import { Pressable, StyleSheet, Text, View, Platform } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Platform,
+  Vibration,
+  Pressable,
+} from "react-native";
 import React, { useEffect, useState } from "react";
 import { GlobalSecondTimer } from "../utils/GlobalTimer";
 import { Settings } from "./Settings";
@@ -25,7 +32,10 @@ export default observer(function App() {
   return (
     <>
       <Pressable
-        onLongPress={() => settingsRef.current?.open()}
+        onLongPress={() => {
+          settingsRef.current?.open();
+          Vibration.vibrate(100);
+        }}
         style={styles.container}
       >
         <View>
